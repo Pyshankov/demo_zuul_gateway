@@ -5,4 +5,4 @@ spring:
     name: account
   cloud:
     zookeeper:
-      connect-string: 10.2.2.65:2181
+      connect-string: localhost:2181
