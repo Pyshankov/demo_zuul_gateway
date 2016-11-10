@@ -1,8 +1,0 @@
-server:
-  port: 9002
-spring:
-  application:
-    name: account
-  cloud:
-    zookeeper:
-      connect-string: 10.2.2.65:2181

@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: book
+  cloud:
+    config:
+      uri: http://localhost:8888
+      fail-fast: true
