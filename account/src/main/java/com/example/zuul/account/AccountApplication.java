@@ -1,22 +1,25 @@
 package com.example.zuul.account;
 
 
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
+import org.apache.catalina.servlet4preview.http.HttpServletRequest;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.netflix.feign.EnableFeignClients;
 import org.springframework.cloud.netflix.feign.FeignClient;
-import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
-
 
 @RestController
 @EnableDiscoveryClient
@@ -30,22 +33,18 @@ public class AccountApplication {
 	@Autowired
 	private  BookClient bookClient;
 
-	@RequestMapping(value = "server/{id}")
-	public List<ServiceInstance> availableServers(@PathVariable String id) {
-		return discoveryClient.getInstances(id);
-	}
+	@RequestMapping(value = "/account/{userName}")
+	public ResponseEntity<String> available(HttpServletRequest request, @PathVariable String userName) throws Exception {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setLocation(new URI(request.getRequestURL().toString()));
+		JSONObject result = new JSONObject();
+		String host =  discoveryClient.getLocalServiceInstance().getHost() ;
+		Integer port =  discoveryClient.getLocalServiceInstance().getPort();
 
-	@RequestMapping(value = "/account/{val}")
-	public String available(@PathVariable String val) {
-		String s =  discoveryClient.getLocalServiceInstance().getHost() ;
-		Integer s2 =  discoveryClient.getLocalServiceInstance().getPort();
-		System.out.println(s +":"+ s2);
-		return "My Account from:"+ s +":"+ s2 + "  "+val;
-	}
-
-	@RequestMapping(value = "/account")
-	public String available() {
-		return bookClient.available();
+		result.put("userName",userName);
+		result.put("books",bookClient.available(userName));
+		result.put("node",host+":"+port);
+		return new ResponseEntity<String>(result.toJSONString(),headers, HttpStatus.OK);
 	}
 
 
@@ -56,27 +55,9 @@ public class AccountApplication {
 	@FeignClient(serviceId = "book")
 	public interface BookClient{
 
-		@RequestMapping(method = RequestMethod.GET,value = "/available")
-		String available();
-	}
+		@RequestMapping(method = RequestMethod.GET,value = "/available/{userName}")
+		Map<String,Object> available(@PathVariable(name = "userName") String userName);
 
-
-	@RestController
-	class ServiceInstanceRestController {
-
-		@Autowired
-		private DiscoveryClient discoveryClient;
-
-		@RequestMapping("/service-instances/{applicationName}")
-		public List<ServiceInstance> serviceInstancesByApplicationName(
-				@PathVariable String applicationName) {
-			return this.discoveryClient.getInstances(applicationName);
-		}
-
-	}
-	@Bean
-	RestTemplate getRestTemplate(){
-		return new RestTemplate();
 	}
 
 
